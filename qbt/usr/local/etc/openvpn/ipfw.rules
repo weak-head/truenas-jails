@@ -1,0 +1,64 @@
+#!/usr/local/bin/bash
+##
+# OpenVPN Kill Switch Configuration.
+#
+# From:
+# https://github.com/danjacques/freenasdocs
+##
+
+. /etc/network.subr
+
+RULE_NO=1000
+fwcmd="/sbin/ipfw"
+
+add_fw() {
+  ${fwcmd} add ${RULE_NO} $*
+  RULE_NO=$((${RULE_NO}+1))
+}
+
+add_fwd_port() {
+  ${fwcmd} add 100 fwd $*
+}
+
+# Flush all current rules before we start.
+${fwcmd} -f flush
+
+# Enable loopback.
+add_fw allow ip from any to any via lo0
+
+# Enable VPN traffic.
+add_fw allow ip from any to any via tun*
+
+# Internal Routing
+#
+# Change these addresses accordingly for your internal network and netmask.
+add_fw allow log ip from any to 192.168.1.0/24 keep-state
+
+# Allow DNS traffic.
+#
+# OpenVPN configs may use host names, and we'll need to look these up.
+# Default route.
+add_fw allow log udp from any to any dst-port 53 keep-state
+
+# Allow traffic on OpenVPN UDP port.
+#
+# If you're using TCP VPN and/or a different port, update accordingly. Consult
+# your OpenVPN config for details.
+add_fw allow log udp from any to any dst-port 1195 keep-state
+
+# Cleanup rules.
+RULE_NO=4000
+add_fw allow ip from 127.0.0.1 to any
+
+# Forward qBittornt 8080 to 80 
+add_fwd_port 127.0.0.1,8080 tcp from any to any 80 in
+add_fwd_port 127.0.0.1,8080 udp from any to any 80 in
+
+# VPN Network Access.
+RULE_NO=5000
+add_fw allow ip from 10.0.0.0/7 to any
+add_fw allow ip from any to 10.0.0.0/7
+
+# Block everything else.
+RULE_NO=65534
+add_fw deny log ip from any to any
