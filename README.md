@@ -6,4 +6,4 @@ These jails are not full-featured templates, but more like simple recipes that c
 * [AWS Route53 DynDNS](/route53)
 * [Gateway with SSL termination and certificate renewal](/gateway)
 * [qBittorrent with OpenVPN](/qbt)
-
+* [Nextcloud](/nextcloud)
